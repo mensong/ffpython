@@ -2,7 +2,7 @@
 
 def testBase(a1, a2, a3):
     print('testBase', a1, a2, a3)
-    return 0
+    return str(a1)+str(a2)+str(a3)
 
 def testStl(a1, a2, a3):
     print('testStl', a1, a2, a3)
@@ -72,9 +72,11 @@ class PyClass:
         print('PyClass init....')
     def sayHi(self, a1, a2):
         print('sayHi..', a1, a2)
+        
 def testCppObjReturnPyObj():
     import ffpython
     return PyClass()
+    
 def testCppObjReturnPyLambda():
     def testLambda(a1):
         print('testLambda....', a1)

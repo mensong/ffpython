@@ -17,7 +17,12 @@ void testBase(FFPython& ffpython)
 	printf("os.getcwd=%s\n", ffpython.call<std::string>("os", "getcwd").c_str());
     printf("time.asctime=%s\n", ffpython.call<std::string>("time", "asctime").c_str());
     int a1 = 100; float a2 = 3.14f; std::string a3 = "OhWell";
-    ffpython.call<void>("fftest", "testBase", a1, a2, a3);
+	PyObject* ret = ffpython.call<PyObject*>("fftest", "testBase", a1, a2, a3);
+	std::string str;
+	ScriptCppOps<std::string>::scriptToCpp(ret, str);
+	printf("call testBase return:%s\n", str.c_str());
+
+	ffpython.globalGC(ret);
 }
 
 void testStl(FFPython& ffpython)
@@ -149,6 +154,9 @@ void testPyClassLambda(FFPython& ffpython)
 	ffpython.callMethodByObjRet<void>(pobj, "sayHi", args1);
 	Py_XDECREF(pobj);
 
+	ffpython.setVar<PyObject*>("fftest", "mensong", NULL);
+	PyObject* nullo = ffpython.getVar<PyObject*>("fftest", "mensong");
+	nullo = ffpython.getScriptVar("fftest", "mensong");
 }
 
 int main(int argc, char* argv[])
@@ -156,6 +164,10 @@ int main(int argc, char* argv[])
 	try {
 
 		FFPython ffpython;
+
+		int n = 0;
+		ScriptCppOps<int>::scriptToCpp(NULL, n);
+		
 		testRegFunction(ffpython);
 		ffpython.addPath("./");
 		ffpython.addPath("../");
@@ -172,14 +184,14 @@ int main(int argc, char* argv[])
 		TestGuard("testCppObjToPy", testCppObjToPy(ffpython));
 
 		TestGuard("testPyClassLambda", testPyClassLambda(ffpython));
-
-#ifdef _WIN32
-		system("pause");
-#endif
 	}
 	catch(std::exception& e) {
 		printf("exception<%s>\n", e.what());
 	}
     printf("main exit...\n");
+
+#ifdef _WIN32
+	system("pause");
+#endif
     return 0;
 }

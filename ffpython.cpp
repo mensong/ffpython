@@ -16,7 +16,7 @@ static PyObject* callExt(PyObject* self, PyObject* args)
 		return NULL;
 	ScriptIterface* pfunc = FFPython::getRegFuncByID(idFunc);
 	if (!pfunc) {
-		Py_RETURN_NONE;
+		return NULL;
 	}
 	pfunc->clearTmpArg();//!支持递归
 	pfunc->pobjArg = (void*)addrObj;//!如果是类方法，需要有类指针参数
@@ -51,7 +51,7 @@ static PyObject* callExt(PyObject* self, PyObject* args)
 		{
 			std::map<void*, ScriptIterface*>::iterator it = FFPython::m_allocObjs.find(pfunc->pobjArg);
 			if (it == FFPython::m_allocObjs.end()) {
-				Py_RETURN_NONE;
+				return NULL;
 			}
 		}
 		ret = pfunc->handleRun();
@@ -159,11 +159,12 @@ FFPython::~FFPython()
 		delete m_regFuncs[i];
 	}
 	m_regFuncs.clear();
-	for (size_t i = 0; i < m_listGlobalCache.size(); ++i)
+	for (std::set<PyObject*>::iterator it = m_listGlobalGC.begin(); 
+		it != m_listGlobalGC.end(); ++it)
 	{
-		Py_XDECREF(m_listGlobalCache[i]);
+		Py_XDECREF(*it);
 	}
-	m_listGlobalCache.clear();
+	m_listGlobalGC.clear();
 	if (Py_IsInitialized())
 		Py_Finalize();
 }
@@ -186,7 +187,10 @@ PyObject* FFPython::callFuncByObj(PyObject* pFunc, std::vector<PyObject*>& objAr
 	if (pFunc && PyCallable_Check(pFunc)) {
 		PyObject* pArgs = PyTuple_New(objArgs.size());
 		for (int i = 0; i < objArgs.size(); ++i) {
-			PyTuple_SetItem(pArgs, i, objArgs[i]);
+			if (objArgs[i])
+				PyTuple_SetItem(pArgs, i, objArgs[i]);
+			else
+				PyTuple_SetItem(pArgs, i, Py_None);
 		}
 		objArgs.clear();
 		pValue = PyObject_CallObject(pFunc, pArgs);
@@ -202,27 +206,22 @@ PyObject* FFPython::callFuncByObj(PyObject* pFunc, std::vector<PyObject*>& objAr
 		traceback(m_strErr);
 	}
 	
-	if (!pValue)
-		Py_RETURN_FALSE;
 	return pValue;
 }
 PyObject* FFPython::getScriptVarByObj(PyObject* pModule, const std::string& strVarName)
 {
 	PyObject* pValue = PyObject_GetAttrString(pModule, strVarName.c_str());
-	if (!pValue) {
-		Py_RETURN_NONE;
-	}
 	return pValue;
 }
 PyObject* FFPython::getScriptVar(const std::string& strMod, const std::string& strVarName)
 {
 	PyObject* pName = PyString_FromString(strMod.c_str());
 	if (!pName)
-		Py_RETURN_FALSE;
+		return NULL;
 	PyObject* pModule = PyImport_Import(pName);
 	Py_DECREF(pName);
 	if (!pModule) {
-		Py_RETURN_NONE;
+		return NULL;
 	}
 	PyObject* pValue = getScriptVarByObj(pModule, strVarName);
 	Py_DECREF(pModule);
@@ -231,11 +230,10 @@ PyObject* FFPython::getScriptVar(const std::string& strMod, const std::string& s
 PyObject* FFPython::callFunc(const std::string& modName, const std::string& funcName, std::vector<PyObject*>& objArgs)
 {
 	PyObject* pFunc = getScriptVar(modName, funcName);
+	if (!pFunc)
+		return NULL;
 	PyObject* pValue = callFuncByObj(pFunc, objArgs);
 	Py_XDECREF(pFunc);
-
-	if (!pValue)
-		Py_RETURN_FALSE;
 	return pValue;
 }
 FFPython& FFPython::reg(ScriptIterface* pObj, const std::string& name, 
@@ -305,7 +303,7 @@ int FFPython::traceback(std::string& ret_)
 	PyErr_Fetch(&ptype, &pvalue, &ptraceback);
 	if (pvalue)
 	{
-		if (true == PyList_Check(pvalue))
+		if (PyList_Check(pvalue))
 		{
 			int64_t n = PyList_Size(pvalue);
 			for (int64_t i = 0; i < n; ++i)
@@ -316,13 +314,13 @@ int FFPython::traceback(std::string& ret_)
 				Py_DECREF(pystr);
 			}
 		}
-		else if (true == PyTuple_Check(pvalue))
+		else if (PyTuple_Check(pvalue))
 		{
 			int64_t n = PyTuple_Size(pvalue);
 			for (int64_t i = 0; i < n; ++i)
 			{
 				PyObject* tmp_str = PyTuple_GetItem(pvalue, i);
-				if (true == PyTuple_Check(tmp_str))
+				if (PyTuple_Check(tmp_str))
 				{
 					int64_t m = PyTuple_Size(tmp_str);
 					for (int64_t j = 0; j < m; ++j)
@@ -366,7 +364,7 @@ int FFPython::traceback(std::string& ret_)
 			PyObject* pArgs = PyTuple_New(1);
 			PyTuple_SetItem(pArgs, 0, ptraceback);
 			PyObject* pyth_val = PyObject_CallObject(pyth_func, pArgs);
-			if (pyth_val && true == PyList_Check(pyth_val))
+			if (pyth_val && PyList_Check(pyth_val))
 			{
 				int64_t n = PyList_Size(pyth_val);
 				for (int64_t i = 0; i < n; ++i)
@@ -398,6 +396,19 @@ int FFPython::traceback(std::string& ret_)
 	printf("ffpython traceback:%s\n", ret_.c_str());
 	return 0;
 }
+
+void FFPython::globalGC(PyObject* o)
+{
+	if (!o)
+		return;
+
+	std::set<PyObject*>::iterator itFinder =  m_listGlobalGC.find(o);
+	if (itFinder == m_listGlobalGC.end())
+	{
+		m_listGlobalGC.insert(o);
+	}
+}
+
 bool FFPython::reload(const std::string& py_name_)
 {
 	PyObject* pName = NULL, * pModule = NULL;

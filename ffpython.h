@@ -90,7 +90,8 @@ template<typename T>
 class ScriptFieldImpl;
 class ScriptRawImpl :public ScriptIterface {
 public:
-    typedef PyObject* (*FuncType)(std::vector<PyObject*>&); FuncType func;
+    typedef PyObject* (*FuncType)(std::vector<PyObject*>&); 
+    FuncType func;
     ScriptRawImpl(FuncType f) :func(f) {}
     virtual PyObject* handleRun() { 
         return func(tmpArgs);
@@ -153,15 +154,14 @@ public:
     RET_V callFuncByObjRet(PyObject* pFunc, std::vector<PyObject*>& objArgs)
     {
         RET_V ret = InitValueTrait<RET_V>::value();
-        callFuncByObj(pFunc, objArgs, &ret);
-        return getErrMsg().empty();
+        return callFuncByObj(pFunc, objArgs, &ret);
     }
     template<typename RET>
     RET_V callMethodByObjRet(PyObject* pObj, const std::string& nameFunc, std::vector<PyObject*>& objArgs)
     {
         PyObject* pFunc = PyObject_GetAttrString(pObj, nameFunc.c_str());
         if (!pFunc) {
-            Py_RETURN_NONE;
+            return NULL;
         }
         RET_V ret = InitValueTrait<RET_V>::value();
         callFuncByObj(pFunc, objArgs, &ret);
@@ -389,12 +389,14 @@ public:
     }
     int traceback(std::string& ret_);
     void cacheObj(PyObject* b) { m_listArgs.push_back(b); }
+    void globalGC(PyObject* o);
+
 private:
     std::string                             m_strErr;
     std::vector<PyObject*>                  m_listArgs;
     static std::vector<ScriptIterface*>     m_regFuncs;
     std::string                             m_curRegClassName;
-    std::vector<PyObject*>                  m_listGlobalCache;
+    std::set<PyObject*>                     m_listGlobalGC;
 public:
     static std::map<void*, ScriptIterface*> m_allocObjs;
     static PyObject*                        pyobjBuildTmpObj;
@@ -403,11 +405,12 @@ template<>
 struct ScriptCppOps<int8_t> {
     static PyObject* scriptFromCpp(int8_t n) { return PyLong_FromLong(long(n)); }
     static bool scriptToCpp(PyObject* pvalue, int8_t& ret) {
+        if (!pvalue) { return false; }
         if (PyLong_Check(pvalue)) { ret = (int8_t)PyLong_AsLong(pvalue); }
         else if (PyBool_Check(pvalue)) { ret = (Py_False == pvalue ? 0 : 1); }
         else if (PyFloat_Check(pvalue)) { ret = (int8_t)PyFloat_AsDouble(pvalue); }
         else if (PyString_Check(pvalue)) { ret = (int8_t)atol(PyString_AsString(pvalue)); }
-        else { ret = 0; return false; }
+        else { return false; }
         return true;
     }
 };
@@ -415,11 +418,12 @@ template<>
 struct ScriptCppOps<uint8_t> {
     static PyObject* scriptFromCpp(uint8_t n) { return PyLong_FromLong(long(n)); }
     static bool scriptToCpp(PyObject* pvalue, uint8_t& ret) {
+        if (!pvalue) { return false; }
         if (PyLong_Check(pvalue)) { ret = (uint8_t)PyLong_AsLong(pvalue); }
         else if (PyBool_Check(pvalue)) { ret = (Py_False == pvalue ? 0 : 1); }
         else if (PyFloat_Check(pvalue)) { ret = (uint8_t)PyFloat_AsDouble(pvalue); }
         else if (PyString_Check(pvalue)) { ret = (uint8_t)atol(PyString_AsString(pvalue)); }
-        else { ret = 0; return false; }
+        else { return false; }
         return true;
     }
 };
@@ -427,11 +431,12 @@ template<>
 struct ScriptCppOps<int16_t> {
     static PyObject* scriptFromCpp(int16_t n) { return PyLong_FromLong(long(n)); }
     static bool scriptToCpp(PyObject* pvalue, int16_t& ret) {
+        if (!pvalue) { return false; }
         if (PyLong_Check(pvalue)) { ret = (int16_t)PyLong_AsLong(pvalue); }
         else if (PyBool_Check(pvalue)) { ret = (Py_False == pvalue ? 0 : 1); }
         else if (PyFloat_Check(pvalue)) { ret = (int16_t)PyFloat_AsDouble(pvalue); }
         else if (PyString_Check(pvalue)) { ret = (int16_t)atol(PyString_AsString(pvalue)); }
-        else { ret = 0; return false; }
+        else { return false; }
         return true;
     }
 };
@@ -439,11 +444,12 @@ template<>
 struct ScriptCppOps<uint16_t> {
     static PyObject* scriptFromCpp(uint16_t n) { return PyLong_FromLong(long(n)); }
     static bool scriptToCpp(PyObject* pvalue, uint16_t& ret) {
+        if (!pvalue) { return false; }
         if (PyLong_Check(pvalue)) { ret = (uint16_t)PyLong_AsLong(pvalue); }
         else if (PyBool_Check(pvalue)) { ret = (Py_False == pvalue ? 0 : 1); }
         else if (PyFloat_Check(pvalue)) { ret = (uint16_t)PyFloat_AsDouble(pvalue); }
         else if (PyString_Check(pvalue)) { ret = (uint16_t)atol(PyString_AsString(pvalue)); }
-        else { ret = 0; return false; }
+        else { return false; }
         return true;
     }
 };
@@ -451,11 +457,12 @@ template<>
 struct ScriptCppOps<int32_t> {
     static PyObject* scriptFromCpp(int32_t n) { return PyLong_FromLong(long(n)); }
     static bool scriptToCpp(PyObject* pvalue, int32_t& ret) {
+        if (!pvalue) { return false; }
         if (PyLong_Check(pvalue)) { ret = (int32_t)PyLong_AsLong(pvalue); }
         else if (PyBool_Check(pvalue)) { ret = (Py_False == pvalue ? 0 : 1); }
         else if (PyFloat_Check(pvalue)) { ret = (int32_t)PyFloat_AsDouble(pvalue); }
         else if (PyString_Check(pvalue)) { ret = (int32_t)atol(PyString_AsString(pvalue)); }
-        else { ret = 0; return false; }
+        else { return false; }
         return true;
     }
 };
@@ -463,11 +470,12 @@ template<>
 struct ScriptCppOps<uint32_t> {
     static PyObject* scriptFromCpp(uint32_t n) { return PyLong_FromLong(long(n)); }
     static bool scriptToCpp(PyObject* pvalue, uint32_t& ret) {
+        if (!pvalue) { return false; }
         if (PyLong_Check(pvalue)) { ret = (uint32_t)PyLong_AsLong(pvalue); }
         else if (PyBool_Check(pvalue)) { ret = (Py_False == pvalue ? 0 : 1); }
         else if (PyFloat_Check(pvalue)) { ret = (uint32_t)PyFloat_AsDouble(pvalue); }
         else if (PyString_Check(pvalue)) { ret = (uint32_t)atol(PyString_AsString(pvalue)); }
-        else { ret = 0; return false; }
+        else { return false; }
         return true;
     }
 };
@@ -475,11 +483,12 @@ template<>
 struct ScriptCppOps<int64_t> {
     static PyObject* scriptFromCpp(int64_t n) { return PyLong_FromLongLong(n); }
     static bool scriptToCpp(PyObject* pvalue, int64_t& ret) {
+        if (!pvalue) { return false; }
         if (PyLong_Check(pvalue)) { ret = (int64_t)PyLong_AsLongLong(pvalue); }
         else if (PyBool_Check(pvalue)) { ret = (Py_False == pvalue ? 0 : 1); }
         else if (PyFloat_Check(pvalue)) { ret = (int64_t)PyFloat_AsDouble(pvalue); }
         else if (PyString_Check(pvalue)) { ret = (int64_t)atol(PyString_AsString(pvalue)); }
-        else { ret = 0; return false; }
+        else { return false; }
         return true;
     }
 };
@@ -487,45 +496,50 @@ template<>
 struct ScriptCppOps<uint64_t> {
     static PyObject* scriptFromCpp(uint64_t n) { return PyLong_FromLongLong(long(n)); }
     static bool scriptToCpp(PyObject* pvalue, uint64_t& ret) {
+        if (!pvalue) { return false; }
         if (PyLong_Check(pvalue)) { ret = (uint64_t)PyLong_AsLongLong(pvalue); }
         else if (PyBool_Check(pvalue)) { ret = (Py_False == pvalue ? 0 : 1); }
         else if (PyFloat_Check(pvalue)) { ret = (uint64_t)PyFloat_AsDouble(pvalue); }
         else if (PyString_Check(pvalue)) { ret = (uint64_t)atol(PyString_AsString(pvalue)); }
-        else { ret = 0; return false; }
+        else { return false; }
         return true;
     }
 };
 template<> struct ScriptCppOps<float> {
     static PyObject* scriptFromCpp(float n) { return PyFloat_FromDouble(float(n)); }
     static bool scriptToCpp(PyObject* pvalue, float& ret) {
+        if (!pvalue) { return false; }
         if (PyLong_Check(pvalue)) { ret = (float)PyLong_AsLong(pvalue); }
         else if (PyFloat_Check(pvalue)) { ret = (float)PyFloat_AsDouble(pvalue); }
         else if (PyString_Check(pvalue)) { ret = (float)atof(PyString_AsString(pvalue)); }
-        else { ret = 0.0; return false; }
+        else { return false; }
         return true;
     }
 };
 template<> struct ScriptCppOps<double> {
     static PyObject* scriptFromCpp(double n) { return PyFloat_FromDouble(double(n)); }
     static bool scriptToCpp(PyObject* pvalue, double& ret) {
+        if (!pvalue) { return false; }
         if (PyLong_Check(pvalue)) { ret = (double)PyLong_AsLong(pvalue); }
         else if (PyFloat_Check(pvalue)) { ret = (double)PyFloat_AsDouble(pvalue); }
         else if (PyString_Check(pvalue)) { ret = (double)atof(PyString_AsString(pvalue)); }
-        else { ret = 0.0; return false; }
+        else { return false; }
         return true;
     }
 };
 template<> struct ScriptCppOps<bool> {
     static PyObject* scriptFromCpp(bool n) { if (n) { Py_RETURN_TRUE; } else { Py_RETURN_FALSE; } }
     static bool scriptToCpp(PyObject* pvalue, bool& ret) {
+        if (!pvalue) { return false; }
         if (Py_False == pvalue || Py_None == pvalue) { ret = false; }
-        else { ret = true; }
+        else { return false; }
         return true;
     }
 };
 template<> struct ScriptCppOps<std::string> {
     static PyObject* scriptFromCpp(const std::string& n) { return PyUnicode_FromStringAndSize(n.c_str(), n.size()); }
     static bool scriptToCpp(PyObject* pvalue, std::string& ret) {
+        if (!pvalue) { return false; }
         if (PyLong_Check(pvalue)) { 
             char buff[64] = { 0 };
             SAFE_SPRINTF(buff, sizeof(buff), "%ld", PyLong_AsLong(pvalue));
@@ -547,23 +561,25 @@ template<> struct ScriptCppOps<std::string> {
             if (pstr)
                 ret.assign(pstr, size);
         }
-        else { ret.clear(); return false; }
+        else { return false; }
         return true;
     }
 };
 template<> struct ScriptCppOps<const char*> {
     static PyObject* scriptFromCpp(const char* n) { return PyUnicode_FromString(n); }
     static bool scriptToCpp(PyObject* pvalue, const char*& ret) {
+        if (!pvalue) { return false; }
         if (PyString_Check(pvalue)) {
             ret = PyString_AsString(pvalue);
         }
-        else { ret = "";  return false; }
+        else { return false; }
         return true;
     }
 };
 template<> struct ScriptCppOps<void*> {
     static PyObject* scriptFromCpp(void* n) { return PyLong_FromVoidPtr(n); }
     static bool scriptToCpp(PyObject* pvalue, void*& ret) {
+        if (!pvalue) { return false; }
         ret = PyLong_AsVoidPtr(pvalue);
         return true;
     }
@@ -574,6 +590,7 @@ template<int size> struct ScriptCppOps<char[size]> {
 template<> struct ScriptCppOps<PyObject*> {
     static PyObject* scriptFromCpp(PyObject* n) { return n; }
     static bool scriptToCpp(PyObject* pvalue, PyObject*& ret) {
+        if (!pvalue) { return false; }
         ret = pvalue;
         return true;
     }
@@ -584,11 +601,15 @@ template<typename T> struct ScriptCppOps<T*> {
         if (!FFPython::pyobjBuildTmpObj) {
             Py_RETURN_NONE;
         }
+        if (!n)
+            Py_RETURN_NONE;
+
         PyObject* pFunc = FFPython::pyobjBuildTmpObj;
         PyObject* pValue = NULL;
         if (pFunc && PyCallable_Check(pFunc)) {
             PyObject* pArgs = PyTuple_New(2);
-            PyTuple_SetItem(pArgs, 0, ScriptCppOps<std::string>::scriptFromCpp(BindClassName));
+            PyObject* arg0 = ScriptCppOps<std::string>::scriptFromCpp(BindClassName);
+            PyTuple_SetItem(pArgs, 0, (arg0 ? arg0 : Py_None));
             PyTuple_SetItem(pArgs, 1, PyLong_FromVoidPtr(n));
             pValue = PyObject_CallObject(pFunc, pArgs);
             Py_DECREF(pArgs);
@@ -600,10 +621,14 @@ template<typename T> struct ScriptCppOps<T*> {
         return pValue;
     }
     static bool scriptToCpp(PyObject* pyobjVal, T*& ret) {
+        if (!pyobjVal) { return false; }
         PyObject* pValue = PyObject_GetAttrString(pyobjVal, "_cppInterObj_");
         if (pValue) {
             ret = (T*)PyLong_AsVoidPtr(pValue);
             Py_DECREF(pValue);
+        }
+        else {
+            return false;
         }
         return true;
     }
@@ -623,9 +648,11 @@ struct ScriptCppOps<std::vector<T> >
     }
     static bool scriptToCpp(PyObject* pyobjVal, std::vector<T>& retVal)
     {
-        retVal.clear();
-        if (true == PyTuple_Check(pyobjVal))
+        if (!pyobjVal) { return false; }
+        
+        if (PyTuple_Check(pyobjVal))
         {
+            retVal.clear();
             Py_ssize_t n = PyTuple_Size(pyobjVal);
             for (Py_ssize_t i = 0; i < n; ++i)
             {
@@ -633,8 +660,9 @@ struct ScriptCppOps<std::vector<T> >
                 ScriptCppOps<T>::scriptToCpp(PyTuple_GetItem(pyobjVal, i), retVal.back());
             }
         }
-        else if (true == PyList_Check(pyobjVal))
+        else if (PyList_Check(pyobjVal))
         {
+            retVal.clear();
             Py_ssize_t n = PyList_Size(pyobjVal);
             for (Py_ssize_t i = 0; i < n; ++i)
             {
@@ -662,9 +690,11 @@ struct ScriptCppOps<std::list<T> >
     }
     static bool scriptToCpp(PyObject* pyobjVal, std::list<T>& retVal)
     {
-        retVal.clear();
-        if (true == PyTuple_Check(pyobjVal))
+        if (!pyobjVal) { return false; }
+        
+        if (PyTuple_Check(pyobjVal))
         {
+            retVal.clear();
             Py_ssize_t n = PyTuple_Size(pyobjVal);
             for (Py_ssize_t i = 0; i < n; ++i)
             {
@@ -672,8 +702,9 @@ struct ScriptCppOps<std::list<T> >
                 ScriptCppOps<T>::scriptToCpp(PyTuple_GetItem(pyobjVal, i), retVal.back());
             }
         }
-        else if (true == PyList_Check(pyobjVal))
+        else if (PyList_Check(pyobjVal))
         {
+            retVal.clear();
             Py_ssize_t n = PyList_Size(pyobjVal);
             for (Py_ssize_t i = 0; i < n; ++i)
             {
@@ -702,13 +733,19 @@ struct ScriptCppOps<std::set<T> >
     }
     static bool scriptToCpp(PyObject* pyobjVal, std::set<T>& retVal)
     {
-        retVal.clear();
+        if (!pyobjVal) { return false; }
+        
         PyObject* iter = PyObject_GetIter(pyobjVal);
+        if (!iter) {
+            return false;
+        }
+
+        retVal.clear();
         PyObject* item = NULL;
         while (NULL != iter && NULL != (item = PyIter_Next(iter)))
         {
             T tmp();
-            if (ScriptCppOps<T>::scriptToCpp(item, tmp))
+            if (!ScriptCppOps<T>::scriptToCpp(item, tmp))
             {
                 Py_DECREF(item);
                 Py_DECREF(iter);
@@ -742,9 +779,12 @@ struct ScriptCppOps<std::map<T, R> >
     }
     static bool scriptToCpp(PyObject* pyobjVal, std::map<T, R>& retVal)
     {
-        retVal.clear();
-        if (true == PyDict_Check(pyobjVal))
+        if (!pyobjVal) { return false; }
+        
+        if (PyDict_Check(pyobjVal))
         {
+            retVal.clear();
+
             PyObject* key = NULL, * value = NULL;
             Py_ssize_t pos = 0;
 
@@ -752,10 +792,15 @@ struct ScriptCppOps<std::map<T, R> >
             {
                 T arg1 = InitValueTrait<T>::value();
                 R arg2 = InitValueTrait<R>::value();
-                ScriptCppOps<T>::scriptToCpp(key, arg1);
-                ScriptCppOps<R>::scriptToCpp(value, arg2);
-                retVal[arg1] = arg2;
+                if (ScriptCppOps<T>::scriptToCpp(key, arg1) &&
+                    ScriptCppOps<R>::scriptToCpp(value, arg2))
+                {
+                    retVal[arg1] = arg2;
+                }
             }
+        }
+        else {
+            return false;
         }
         return true;
     }
