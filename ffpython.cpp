@@ -296,7 +296,7 @@ int FFPython::traceback(std::string& ret_)
 	PyObject* err = PyErr_Occurred();
 	if (!err)
 	{
-		return 0;
+		return 1;
 	}
 	
 	PyObject* ptype = NULL, * pvalue = NULL, * ptraceback = NULL;
@@ -419,7 +419,7 @@ bool FFPython::reload(const std::string& py_name_)
 		return false;
 	}
 	Py_DECREF(pNewMod);
-	return 0;
+	return true;
 }
 bool FFPython::load(const std::string& py_name_)
 {
@@ -435,5 +435,5 @@ bool FFPython::load(const std::string& py_name_)
 	}
 
 	Py_DECREF(pModule);
-	return 0;
+	return true;
 }
