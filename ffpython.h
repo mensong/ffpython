@@ -146,7 +146,7 @@ public:
     {
         ScriptObjRefGuard retObj(CheckType<RET_V>::IsScriptObject(), callFuncByObj(pFunc, objArgs));
         if (pRet) {
-            *pRet = ScriptCppOps<RET_V>::scriptToCpp(retObj.value, *pRet);
+            ScriptCppOps<RET_V>::scriptToCpp(retObj.value, *pRet);
         }
         return getErrMsg().empty();
     }
@@ -173,7 +173,7 @@ public:
     {
         ScriptObjRefGuard retObj(CheckType<RET_V>::IsScriptObject(), callFunc(modName, funcName, objArgs));
         if (pRet) {
-            *pRet = ScriptCppOps<RET_V>::scriptToCpp(retObj.value, *pRet);
+            ScriptCppOps<RET_V>::scriptToCpp(retObj.value, *pRet);
         }
         return getErrMsg().empty();
     }
@@ -560,6 +560,8 @@ template<> struct ScriptCppOps<std::string> {
             PyString_AsStringAndSize(pvalue, (&pstr), &size);
             if (pstr)
                 ret.assign(pstr, size);
+            else
+                ret.clear();
         }
         else { return false; }
         return true;
