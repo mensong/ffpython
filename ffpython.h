@@ -13,6 +13,7 @@
 #include <set>
 #include <map>
 #include <stdexcept>
+
 namespace ff
 {
 #ifndef PyString_Check 
@@ -23,6 +24,7 @@ namespace ff
     #define PyString_FromStringAndSize PyUnicode_FromStringAndSize
     #define PyString_FromString PyUnicode_FromString
 #endif
+
 #ifdef _WIN32
 #define  SAFE_SPRINTF   _snprintf_s
 #define PTR_NUMBER int64_t
@@ -30,7 +32,9 @@ namespace ff
 #define  SAFE_SPRINTF   snprintf
 #define PTR_NUMBER int64_t
 #endif
+
 #define  PYCTOR int (*)
+
 template<typename T>
 struct ScriptCppOps;
 
