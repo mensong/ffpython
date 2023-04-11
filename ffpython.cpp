@@ -1,5 +1,7 @@
 
 #include "ffpython.h"
+#include <algorithm>
+
 using namespace ff;
 
 std::vector<ScriptIterface*> FFPython::m_regFuncs;
@@ -189,8 +191,12 @@ FFPython::~FFPython()
 }
 void FFPython::addPath(const std::string& path)
 {
+	//replace \\ to /
+	std::string _path = path;
+	std::replace(_path.begin(), _path.end(), '\\', '/');
+	
 	char buff[1024];
-	SAFE_SPRINTF(buff, sizeof(buff), "import sys\nif '%s' not in sys.path:\n\tsys.path.append('%s')\n", path.c_str(), path.c_str());
+	SAFE_SPRINTF(buff, sizeof(buff), "import sys\nif '%s' not in sys.path:\n\tsys.path.append('%s')\n", _path.c_str(), _path.c_str());
 	runCode(buff);
 }
 void FFPython::runCode(const std::string& code)
@@ -229,6 +235,8 @@ PyObject* FFPython::callFuncByObj(PyObject* pFunc, std::vector<PyObject*>& objAr
 }
 PyObject* FFPython::getScriptVarByObj(PyObject* pModule, const std::string& strVarName)
 {
+	if (!pModule)
+		return NULL;
 	PyObject* pValue = PyObject_GetAttrString(pModule, strVarName.c_str());
 	return pValue;
 }

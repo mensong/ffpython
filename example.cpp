@@ -149,7 +149,7 @@ void testPyClassLambda(FFPython& ffpython)
     Py_XDECREF(pFunc);
 
 	PyObject* pobj = ffpython.call<PyObject*>("fftest", "testCppObjReturnPyObj");
-	Py_INCREF(pobj);
+	Py_XINCREF(pobj);
 	std::vector<PyObject*> args1;
 	args1.push_back(ScriptCppOps<int>::scriptFromCpp(1111));
 	args1.push_back(ScriptCppOps<std::string>::scriptFromCpp("soNice"));
@@ -173,6 +173,7 @@ int main(int argc, char* argv[])
 		testRegFunction(*ffpython);
 		ffpython->addPath("./");
 		ffpython->addPath("../");
+		ffpython->addPath("D:\\Working\\ffpython_org");
 
 		TestGuard("testBase", testBase(*ffpython));
 

@@ -155,6 +155,9 @@ public:
     template<typename RET>
     bool callFuncByObj(PyObject* pFunc, std::vector<PyObject*>& objArgs, RET* pRet)
     {
+        if (!pFunc)
+            return false;
+
         ScriptObjRefGuard retObj(CheckType<RET_V>::IsScriptObject(), callFuncByObj(pFunc, objArgs));
         if (pRet) {
             ScriptCppOps<RET_V>::scriptToCpp(retObj.value, *pRet);
@@ -165,11 +168,16 @@ public:
     RET_V callFuncByObjRet(PyObject* pFunc, std::vector<PyObject*>& objArgs)
     {
         RET_V ret = InitValueTrait<RET_V>::value();
+        if (!pFunc)
+            return ret;
         return callFuncByObj(pFunc, objArgs, &ret);
     }
     template<typename RET>
     RET_V callMethodByObjRet(PyObject* pObj, const std::string& nameFunc, std::vector<PyObject*>& objArgs)
     {
+        if (!pObj)
+            return NULL;
+
         PyObject* pFunc = PyObject_GetAttrString(pObj, nameFunc.c_str());
         if (!pFunc) {
             return NULL;
@@ -359,8 +367,11 @@ public:
     PyObject* getScriptVar(const std::string& strMod, const std::string& strVarName);
     template<typename RET>
     RET_V getVar(PyObject* pyMod, const std::string& strVarName) {
-        ScriptObjRefGuard retObj(CheckType<RET_V>::IsScriptObject(), getScriptVarByObj(pyMod, strVarName));
         RET_V ret = InitValueTrait<RET_V>::value();
+        if (!pyMod) 
+            return ret;
+        ScriptObjRefGuard retObj(CheckType<RET_V>::IsScriptObject(), getScriptVarByObj(pyMod, strVarName));
+        
         ScriptCppOps<RET_V>::scriptToCpp(retObj.value, ret);
         return ret;
     }
