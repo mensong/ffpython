@@ -5,6 +5,8 @@
 
 #include "ffpython.h"
 
+extern PyMethodDef EmbMethods[];
+
 #define  TestGuard(X, Y) printf("-------%s begin-----------\n", X);try {Y;}catch(std::exception& e_){printf("exception<%s>\n", e_.what());}\
         printf("-------%s end-----------\n", X);
 using namespace ff;
@@ -161,33 +163,35 @@ void testPyClassLambda(FFPython& ffpython)
 
 int main(int argc, char* argv[])
 {
-	try {
-
-		FFPython ffpython;
+	try 
+	{
+		FFPython* ffpython = FFPython::Ins();
 
 		int n = 0;
 		ScriptCppOps<int>::scriptToCpp(NULL, n);
 		
-		testRegFunction(ffpython);
-		ffpython.addPath("./");
-		ffpython.addPath("../");
+		testRegFunction(*ffpython);
+		ffpython->addPath("./");
+		ffpython->addPath("../");
 
-		TestGuard("testBase", testBase(ffpython));
+		TestGuard("testBase", testBase(*ffpython));
 
-		TestGuard("testStl", testStl(ffpython));
-		ffpython.call<void>("fftest", "testRegFunction");
+		TestGuard("testStl", testStl(*ffpython));
+		ffpython->call<void>("fftest", "testRegFunction");
 
-		TestGuard("testRegisterBaseClass", testRegisterBaseClass(ffpython));
+		TestGuard("testRegisterBaseClass", testRegisterBaseClass(*ffpython));
 
-		TestGuard("testRegisterInheritClass", testRegisterInheritClass(ffpython));
+		TestGuard("testRegisterInheritClass", testRegisterInheritClass(*ffpython));
 		
-		TestGuard("testCppObjToPy", testCppObjToPy(ffpython));
+		TestGuard("testCppObjToPy", testCppObjToPy(*ffpython));
 
-		TestGuard("testPyClassLambda", testPyClassLambda(ffpython));
+		TestGuard("testPyClassLambda", testPyClassLambda(*ffpython));
 	}
 	catch(std::exception& e) {
 		printf("exception<%s>\n", e.what());
 	}
+	
+	FFPython::FreeIns();
     printf("main exit...\n");
 
 #ifdef _WIN32

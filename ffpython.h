@@ -113,8 +113,15 @@ enum FFScriptTypeDef {
 class FFPython
 {
 public:
+    static FFPython* Ins();
+    static void FreeIns();
+
+private:
 	FFPython();
 	~FFPython();
+    static FFPython* s_ins;
+
+public:
     void addPath(const std::string& path);
 	void runCode(const std::string& code);
     bool reload(const std::string& pyMod);

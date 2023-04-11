@@ -67,6 +67,25 @@ static PyMethodDef EmbMethods[] = {
 	{NULL, NULL, 0, NULL}
 };
 
+FFPython* FFPython::s_ins = NULL;
+FFPython* ff::FFPython::Ins()
+{
+	if (s_ins)
+		return s_ins;
+
+	s_ins = new FFPython;
+	return s_ins;
+}
+
+void ff::FFPython::FreeIns()
+{
+	if (s_ins)
+	{
+		delete s_ins;
+		s_ins = NULL;
+	}
+}
+
 FFPython::FFPython()
 {
 #ifdef PYTHON_3
@@ -84,7 +103,7 @@ FFPython::FFPython()
 			return PyModule_Create(&EmbModule);
 		}
 	};
-	PyImport_AppendInittab("ffpython", &PyInitTmpTool::PyInit_emb);
+	int n = PyImport_AppendInittab("ffpython", &PyInitTmpTool::PyInit_emb);
 	Py_Initialize();
 #else
 	Py_Initialize();
