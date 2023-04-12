@@ -9,7 +9,7 @@ extern PyMethodDef EmbMethods[];
 
 #define  TestGuard(X, Y) printf("-------%s begin-----------\n", X);try {Y;}catch(std::exception& e_){printf("exception<%s>\n", e_.what());}\
         printf("-------%s end-----------\n", X);
-using namespace ff;
+
 
 void testBase(FFPython& ffpython)
 {
@@ -163,18 +163,24 @@ void testPyClassLambda(FFPython& ffpython)
 
 int main(int argc, char* argv[])
 {
-	try 
+	try
 	{
 		FFPython* ffpython = FFPython::Ins();
-
-		int n = 0;
-		ScriptCppOps<int>::scriptToCpp(NULL, n);
 		
+		ffpython->addPath("E:\\");
+		std::string ret;
+		std::vector<PyObject*> args;
+		args.push_back(ScriptCppOps<std::string>::scriptFromCpp("{\"capturePoint\":{\"X\":757.59,\"Y\":400,\"Z\":725.685,\"Rx\":-175.591,\"Ry\":-14.586,\"Rz\":95.639},\"initRobotPos\":{\"X\":120.744,\"Y\":382.915,\"Z\":300,\"Rx\":0,\"Ry\":0,\"Rz\":-22.155}}"));
+		bool res = ffpython->callFunc("robot", "trans", args, &ret);
+		std::string ret1 = ffpython->call<std::string>("robot", "trans", "{\"capturePoint\":{\"X\":757.59,\"Y\":400,\"Z\":725.685,\"Rx\":-175.591,\"Ry\":-14.586,\"Rz\":95.639},\"initRobotPos\":{\"X\":120.744,\"Y\":382.915,\"Z\":300,\"Rx\":0,\"Ry\":0,\"Rz\":-22.155}}");
+
+
 		testRegFunction(*ffpython);
 		ffpython->addPath("./");
 		ffpython->addPath("../");
 		ffpython->addPath("D:\\Working\\ffpython_org");
 
+		
 		TestGuard("testBase", testBase(*ffpython));
 
 		TestGuard("testStl", testStl(*ffpython));

@@ -14,8 +14,6 @@
 #include <map>
 #include <stdexcept>
 
-namespace ff
-{
 #ifndef PyString_Check 
     #define PYTHON_3
     #define PyString_Check PyUnicode_Check
@@ -162,7 +160,9 @@ public:
         if (pRet) {
             ScriptCppOps<RET_V>::scriptToCpp(retObj.value, *pRet);
         }
-        return getErrMsg().empty();
+        
+        std::string errMsg;
+        return !getErr(errMsg);
     }
     template<typename RET>
     RET_V callFuncByObjRet(PyObject* pFunc, std::vector<PyObject*>& objArgs)
@@ -185,7 +185,9 @@ public:
         RET_V ret = InitValueTrait<RET_V>::value();
         callFuncByObj(pFunc, objArgs, &ret);
         Py_XDECREF(pFunc);
-        return getErrMsg().empty();
+
+        std::string errMsg;
+        return !getErr(errMsg);
     }
     template<typename RET>
     bool callFunc(const std::string& modName, const std::string& funcName, std::vector<PyObject*>& objArgs, RET* pRet)
@@ -194,7 +196,9 @@ public:
         if (pRet) {
             ScriptCppOps<RET_V>::scriptToCpp(retObj.value, *pRet);
         }
-        return getErrMsg().empty();
+        
+        std::string errMsg;
+        return !getErr(errMsg);
     }
     //! 调用python函数，最多支持9个参数
     template<typename RET>
@@ -392,7 +396,6 @@ public:
         pModule = PyImport_Import(pName);
         Py_DECREF(pName);
         if (NULL == pModule){
-            traceback(m_strErr);
             return false;
         }
 
@@ -401,7 +404,10 @@ public:
         Py_DECREF(pModule);
         return true;
     }
-    const std::string& getErrMsg() { return m_strErr; }
+    const bool getErr(std::string& strErr) 
+    {
+		return traceback(strErr) == 0;
+    }
     std::vector<PyObject*>& allocArgList() { m_listArgs.clear(); return m_listArgs; }
     static ScriptIterface* getRegFuncByID(size_t i) {
         if (i < m_regFuncs.size()) {
@@ -414,7 +420,6 @@ public:
     void globalGC(PyObject* o);
 
 private:
-    std::string                             m_strErr;
     std::vector<PyObject*>                  m_listArgs;
     static std::vector<ScriptIterface*>     m_regFuncs;
     std::string                             m_curRegClassName;
@@ -1850,8 +1855,7 @@ public:
         Py_RETURN_NONE;
     }
 };
-//!类字段结束
-}//end namespace ff
+
 #endif // ! _FFPYTHON_H_
 
 

@@ -2,8 +2,6 @@
 #include "ffpython.h"
 #include <algorithm>
 
-using namespace ff;
-
 std::vector<ScriptIterface*> FFPython::m_regFuncs;
 std::map<void*, ScriptIterface*> FFPython::m_allocObjs;
 PyObject* FFPython::pyobjBuildTmpObj = NULL;
@@ -70,7 +68,7 @@ static PyMethodDef EmbMethods[] = {
 };
 
 FFPython* FFPython::s_ins = NULL;
-FFPython* ff::FFPython::Ins()
+FFPython* FFPython::Ins()
 {
 	if (s_ins)
 		return s_ins;
@@ -79,7 +77,7 @@ FFPython* ff::FFPython::Ins()
 	return s_ins;
 }
 
-void ff::FFPython::FreeIns()
+void FFPython::FreeIns()
 {
 	if (s_ins)
 	{
@@ -202,9 +200,6 @@ void FFPython::addPath(const std::string& path)
 void FFPython::runCode(const std::string& code)
 {
 	PyRun_SimpleString(code.c_str());
-	if (PyErr_Occurred()) {
-		traceback(m_strErr);
-	}
 }
 PyObject* FFPython::callFuncByObj(PyObject* pFunc, std::vector<PyObject*>& objArgs)
 {
@@ -226,9 +221,6 @@ PyObject* FFPython::callFuncByObj(PyObject* pFunc, std::vector<PyObject*>& objAr
 			Py_DECREF(objArgs[i]);
 		}
 		objArgs.clear();
-	}
-	if (PyErr_Occurred()) {
-		traceback(m_strErr);
 	}
 	
 	return pValue;
@@ -445,7 +437,6 @@ bool FFPython::reload(const std::string& py_name_)
 	Py_DECREF(pName);
 	if (NULL == pModule)
 	{
-		traceback(m_strErr);
 		return false;
 	}
 
@@ -453,7 +444,6 @@ bool FFPython::reload(const std::string& py_name_)
 	Py_DECREF(pModule);
 	if (NULL == pNewMod)
 	{
-		traceback(m_strErr);
 		return false;
 	}
 	Py_DECREF(pNewMod);
@@ -468,7 +458,6 @@ bool FFPython::load(const std::string& py_name_)
 	Py_DECREF(pName);
 	if (NULL == pModule)
 	{
-		traceback(m_strErr);
 		return false;
 	}
 
