@@ -120,6 +120,7 @@ std::string testRegFunction(FFPython& ffpython)
 		.regMethod(&Dumy::dump, "dump");
 
 	ffpython.regFunc(objTest, "objTest");
+	ffpython.runCode("ffpython.objTest(None)");
 	return "cppext";
 }
 
@@ -174,6 +175,8 @@ int main(int argc, char* argv[])
 		bool res = ffpython->callFunc("robot", "trans", args, &ret);
 		std::string ret1 = ffpython->call<std::string>("robot", "trans", "{\"capturePoint\":{\"X\":757.59,\"Y\":400,\"Z\":725.685,\"Rx\":-175.591,\"Ry\":-14.586,\"Rz\":95.639},\"initRobotPos\":{\"X\":120.744,\"Y\":382.915,\"Z\":300,\"Rx\":0,\"Ry\":0,\"Rz\":-22.155}}");
 
+		ffpython->setVar("robot", "a", "123");
+		std::string astr = ffpython->getVar<std::string>("robot", "a");
 
 		testRegFunction(*ffpython);
 		ffpython->addPath("./");
